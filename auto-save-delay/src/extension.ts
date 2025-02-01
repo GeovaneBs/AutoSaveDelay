@@ -1,18 +1,28 @@
 import * as vscode from 'vscode';
 
-
 // Armazena timers para cada documento
 const timers = new Map<string, NodeJS.Timeout>();
 
 export function activate(context: vscode.ExtensionContext) {
+    // Obtém o intervalo de tempo configurado pelo usuário
+    const config = vscode.workspace.getConfiguration('autoSaveExtension');
+    let saveInterval = config.get<number>('saveInterval', 5000); // Valor padrão de 5 segundos
+
+    // Função para salvar o documento
+    const saveDocument = (doc: vscode.TextDocument) => {
+        if (doc.isDirty) {
+            doc.save();
+        }
+    };
+
     // Salva o arquivo quando a aba é alterada
     const onTabChange = vscode.window.onDidChangeActiveTextEditor(editor => {
         if (editor?.document.isDirty) {
-            editor.document.save();
+            saveDocument(editor.document);
         }
     });
 
-    // Configura o timer de 10 segundos após edições
+    // Configura o timer após edições
     const onTextChange = vscode.workspace.onDidChangeTextDocument(e => {
         const doc = e.document;
         const key = doc.uri.toString();
@@ -22,16 +32,23 @@ export function activate(context: vscode.ExtensionContext) {
             clearTimeout(timers.get(key));
         }
 
-        // Novo timer para salvar após 10 segundos
+        // Configura um novo timer para salvar após o período de inatividade
         timers.set(key, setTimeout(() => {
-            if (doc.isDirty) {
-                doc.save();
-            }
+            saveDocument(doc);
             timers.delete(key);
-        }, 10000)); // 10 segundos
+        }, saveInterval));
     });
 
-    context.subscriptions.push(onTabChange, onTextChange);
+    // Atualiza o intervalo de tempo quando a configuração é alterada
+    const onConfigChange = vscode.workspace.onDidChangeConfiguration(e => {
+        if (e.affectsConfiguration('autoSaveExtension.saveInterval')) {
+            const newInterval = vscode.workspace.getConfiguration('autoSaveExtension').get<number>('saveInterval', 5000);
+            // Atualiza o intervalo para novos timers
+            saveInterval = newInterval; 
+        }
+    });
+
+    context.subscriptions.push(onTabChange, onTextChange, onConfigChange);
 }
 
 export function deactivate() {

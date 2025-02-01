@@ -1,6 +1,6 @@
 {
   "name": "VS Code Extension DevContainer",
-  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
       "version": "20"
@@ -24,6 +24,6 @@
       }        
     }
   },
-  "postCreateCommand": "npm install -g yo generator-code", 
+  "postCreateCommand": "npm install -g yo generator-code vsce", 
   "remoteUser": "node"
 }
